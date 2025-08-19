@@ -41,7 +41,7 @@ public class Bullet : MonoBehaviour
         if (!target)
             return;
         Vector2 direction = (target.position - transform.position).normalized;
-        rb.velocity = direction * bulletSpeed;
+        rb.linearVelocity = direction * bulletSpeed;
     }
 
     private void OnCollisionEnter2D(Collision2D other)
