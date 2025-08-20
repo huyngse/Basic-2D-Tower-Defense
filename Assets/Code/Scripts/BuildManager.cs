@@ -20,7 +20,8 @@ public class BuildManager : MonoBehaviour
         return towers[selectedTower];
     }
 
-    public void SetSelectedTower(int selectedTower) { 
+    public void SetSelectedTower(int selectedTower)
+    {
         this.selectedTower = selectedTower;
     }
 }
