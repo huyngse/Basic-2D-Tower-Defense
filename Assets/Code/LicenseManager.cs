@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Networking;
 
 public static class LicenseManager
 {
@@ -10,7 +12,7 @@ public static class LicenseManager
     private const string ActivatedPref = "Activated";
 
     private static string encryptionKey = "MySuperSecretKey"; // 16/24/32 chars for AES
-    private static string validKey = "ABC-123-XYZ";
+    private static string gameId = "b36f2f69-898c-4a83-bd2c-3b53181df255"; // replace with your actual game id
 
     public static bool IsActivated()
     {
@@ -24,29 +26,54 @@ public static class LicenseManager
 
             string currentMachineId = SystemInfo.deviceUniqueIdentifier;
 
-            return savedKey == validKey && savedMachineId == currentMachineId;
+            return savedMachineId == currentMachineId;
         }
         return false;
     }
 
-    public static bool Activate(string inputKey)
+    /// <summary>
+    /// Attempts activation with the server. Call from a MonoBehaviour via StartCoroutine.
+    /// </summary>
+    public static IEnumerator Activate(string inputKey, Action<bool> onResult)
     {
-        if (inputKey == validKey)
+        string url =
+            $"https://indiegamezonese101.azurewebsites.net/api/games/{gameId}/activation-keys/{inputKey}/activation";
+
+        using (UnityWebRequest request = UnityWebRequest.Put(url, string.Empty))
         {
-            string encryptedKey = EncryptString(inputKey, encryptionKey);
-            string encryptedMachineId = EncryptString(
-                SystemInfo.deviceUniqueIdentifier,
-                encryptionKey
-            );
+            request.SetRequestHeader("Content-Type", "application/json");
 
-            PlayerPrefs.SetInt(ActivatedPref, 1);
-            PlayerPrefs.SetString(LicenseKeyPref, encryptedKey);
-            PlayerPrefs.SetString(MachineIdPref, encryptedMachineId);
-            PlayerPrefs.Save();
+            yield return request.SendWebRequest();
 
-            return true;
+            if (request.result == UnityWebRequest.Result.Success && request.responseCode == 204)
+            {
+                // Success! Save locally
+                string encryptedKey = EncryptString(inputKey, encryptionKey);
+                string encryptedMachineId = EncryptString(
+                    SystemInfo.deviceUniqueIdentifier,
+                    encryptionKey
+                );
+
+                PlayerPrefs.SetInt(ActivatedPref, 1);
+                PlayerPrefs.SetString(LicenseKeyPref, encryptedKey);
+                PlayerPrefs.SetString(MachineIdPref, encryptedMachineId);
+                PlayerPrefs.Save();
+
+                onResult?.Invoke(true);
+            }
+            else if (request.responseCode == 400)
+            {
+                Debug.LogWarning("Activation failed: invalid key!");
+                onResult?.Invoke(false);
+            }
+            else
+            {
+                Debug.LogError(
+                    $"Activation request failed! Status: {request.responseCode}, Error: {request.error}"
+                );
+                onResult?.Invoke(false);
+            }
         }
-        return false;
     }
 
     public static void ResetLicense()

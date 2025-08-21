@@ -15,13 +15,15 @@ public class TurretSlow : MonoBehaviour
 
     [SerializeField]
     private float attackSpeed = 1 / 2f;
-     [SerializeField]
+
+    [SerializeField]
     private float freezeTime = 1;
     private float timeUntilFire;
-      private void OnDrawGizmosSelected()
+
+    private void OnDrawGizmosSelected()
     {
-        Handles.color = Color.cyan;
-        Handles.DrawWireDisc(transform.position, transform.forward, targetingRange);
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, targetingRange);
     }
 
     private void Shoot()
@@ -45,10 +47,11 @@ public class TurretSlow : MonoBehaviour
         }
     }
 
-    private IEnumerator ResetEnemySpeed(EnemyMovement enemyMovement) {
+    private IEnumerator ResetEnemySpeed(EnemyMovement enemyMovement)
+    {
         yield return new WaitForSeconds(freezeTime);
         enemyMovement.ResetSpeed();
-     }
+    }
 
     private void Update()
     {
